@@ -1,0 +1,18 @@
+{
+  "name": "event-management-board",
+  "private": true,
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
+  "scripts": {
+    "dev": "npm-run-all --parallel dev:frontend dev:backend",
+    "dev:frontend": "npm --prefix ./frontend run dev",
+    "dev:backend": "npm --prefix ./backend run start",
+    "build": "npm --prefix ./frontend run build",
+    "preview": "npm --prefix ./frontend run preview"
+  },
+  "devDependencies": {
+    "npm-run-all": "^4.1.5"
+  }
+}
