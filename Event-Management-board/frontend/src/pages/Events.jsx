@@ -3,7 +3,17 @@ import EventCard from "../components/EventCard";
 
 const CATEGORIES = ["All", "Tech", "Music", "Sports", "Art"];
 
-export default function Events({ events, onClear, onAdd, successMessage }) {
+export default function Events({
+  events,
+  userRole,
+  currentUser,
+  onClear,
+  onAdd,
+  onEdit,
+  onDelete,
+  successMessage,
+  onRefreshEvents,
+}) {
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("All");
 
@@ -31,6 +41,8 @@ export default function Events({ events, onClear, onAdd, successMessage }) {
     );
     if (ok) onClear();
   };
+
+  const isAdmin = userRole === "Admin";
 
   return (
     <section className="page page--events">
@@ -82,7 +94,9 @@ export default function Events({ events, onClear, onAdd, successMessage }) {
           <p className="empty-state__text">
             {search
               ? "Try another search term or clear the search to see all events."
-              : "Add one to get started."}
+              : isAdmin
+              ? "Add a new event to get started."
+              : "Ask an admin to add events for you."}
           </p>
 
           {search ? (
@@ -94,22 +108,38 @@ export default function Events({ events, onClear, onAdd, successMessage }) {
               Clear Search
             </button>
           ) : (
-            <button type="button" className="primary-button" onClick={onAdd}>
-              Add Event
-            </button>
+            isAdmin && (
+              <button type="button" className="primary-button" onClick={onAdd}>
+                Add Event
+              </button>
+            )
           )}
         </div>
       ) : (
         <div className="events-grid">
           {filtered.map((event) => (
-            <EventCard key={event.id} event={event} />
+            <EventCard
+              key={event.id}
+              event={event}
+              isAdmin={isAdmin}
+              currentUser={currentUser}
+              onEdit={onEdit}
+              onDelete={onDelete}
+              onRegister={onRefreshEvents}
+            />
           ))}
         </div>
       )}
 
-      <button type="button" className="secondary-button" onClick={handleClear}>
-        Clear all events
-      </button>
+      {isAdmin ? (
+        <button type="button" className="secondary-button" onClick={handleClear}>
+          Clear all events
+        </button>
+      ) : (
+        <p className="page__lead" style={{ marginTop: "1rem" }}>
+          Users can browse events only. Admins can manage them.
+        </p>
+      )}
     </section>
   );
 }

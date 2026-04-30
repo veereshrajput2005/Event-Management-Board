@@ -1,15 +1,27 @@
 import { useEffect, useState } from "react";
+import { API_ENDPOINTS } from "../config/api";
 
 const categories = ["Tech", "Sports", "Music", "Art"];
 
 // Small form component. No fancy form library.
-export default function AddEvent({ onAdd, error, onError }) {
-  const [title, setTitle] = useState("");
-  const [date, setDate] = useState("");
-  const [location, setLocation] = useState("");
-  const [description, setDescription] = useState("");
-  const [category, setCategory] = useState(categories[0]);
+export default function AddEvent({ initialEvent, onAdd, onSave, error, onError }) {
+  const [title, setTitle] = useState(initialEvent?.title || "");
+  const [date, setDate] = useState(initialEvent?.date || "");
+  const [location, setLocation] = useState(initialEvent?.location || "");
+  const [description, setDescription] = useState(initialEvent?.description || "");
+  const [category, setCategory] = useState(initialEvent?.category || categories[0]);
   const [saved, setSaved] = useState(false);
+  const [generatingDescription, setGeneratingDescription] = useState(false);
+
+  useEffect(() => {
+    if (initialEvent) {
+      setTitle(initialEvent.title);
+      setDate(initialEvent.date);
+      setLocation(initialEvent.location);
+      setDescription(initialEvent.description);
+      setCategory(initialEvent.category || categories[0]);
+    }
+  }, [initialEvent]);
 
   useEffect(() => {
     if (saved) {
@@ -18,6 +30,8 @@ export default function AddEvent({ onAdd, error, onError }) {
     }
     return undefined;
   }, [saved]);
+
+  const isEditing = Boolean(initialEvent?.id);
 
   const isValid = () => {
     return (
@@ -29,6 +43,32 @@ export default function AddEvent({ onAdd, error, onError }) {
     );
   };
 
+  const generateDescription = async () => {
+    if (!title.trim() || !location.trim()) {
+      onError?.("Please enter event title and location first.");
+      return;
+    }
+
+    setGeneratingDescription(true);
+    try {
+      const response = await fetch(API_ENDPOINTS.GENERATE_DESCRIPTION(), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title, date, location, category }),
+      });
+
+      if (!response.ok) throw new Error("Failed to generate description");
+      const data = await response.json();
+      setDescription(data.description);
+      onError?.("");
+    } catch (err) {
+      console.error("Description generation error:", err);
+      onError?.("Failed to generate description. Check your API key.");
+    } finally {
+      setGeneratingDescription(false);
+    }
+  };
+
   const handleSubmit = (event) => {
     event.preventDefault();
 
@@ -37,8 +77,8 @@ export default function AddEvent({ onAdd, error, onError }) {
       return;
     }
 
-    const newEvent = {
-      id: Date.now().toString(),
+    const savedEvent = {
+      id: isEditing ? initialEvent.id : Date.now().toString(),
       title: title.trim(),
       date,
       location: location.trim(),
@@ -46,7 +86,12 @@ export default function AddEvent({ onAdd, error, onError }) {
       category,
     };
 
-    onAdd(newEvent);
+    if (isEditing) {
+      onSave?.(savedEvent);
+    } else {
+      onAdd(savedEvent);
+    }
+
     onError?.("");
     setSaved(true);
 
@@ -59,10 +104,13 @@ export default function AddEvent({ onAdd, error, onError }) {
 
   return (
     <section className="page page--add">
-      <h1 className="page__title">Add a New Event</h1>
+      <h1 className="page__title">
+        {isEditing ? "Edit Event" : "Add a New Event"}
+      </h1>
       <p className="page__lead">
-        Tell others about your community event. Fill in the details below and
-        submit.
+        {isEditing
+          ? "Update the details for this event."
+          : "Tell others about your community event. Fill in the details below and submit."}
       </p>
       <form className="form" onSubmit={handleSubmit}>
         <label className="form__label">
@@ -107,6 +155,17 @@ export default function AddEvent({ onAdd, error, onError }) {
           />
         </label>
 
+        <div className="form__ai-button-container">
+          <button
+            type="button"
+            onClick={generateDescription}
+            disabled={generatingDescription || !title.trim() || !location.trim()}
+            className="ai-generate-button"
+          >
+            {generatingDescription ? "🤖 Generating..." : "✨ Generate with AI"}
+          </button>
+        </div>
+
         <label className="form__label">
           Category
           <select
@@ -123,10 +182,10 @@ export default function AddEvent({ onAdd, error, onError }) {
         </label>
 
         {error && <p className="form__error">{error}</p>}
-        {saved && <p className="form__success">Event added successfully!</p>}
+        {saved && <p className="form__success">Event saved successfully!</p>}
 
         <button type="submit" className="primary-button" disabled={!isValid()}>
-          Submit Event
+          {isEditing ? "Save Event" : "Submit Event"}
         </button>
       </form>
     </section>
