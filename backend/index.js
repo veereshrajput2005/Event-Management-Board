@@ -315,7 +315,6 @@ Recommend the top 2-3 events that best match the user's interests. Explain why e
   }
 });
 
-app.listen(port, () => {
-  // eslint-disable-next-line no-console
-  console.log(`Backend running at http://localhost:${port}`);
+app.listen(port, "0.0.0.0", () => {
+  console.log(`Backend running at http://0.0.0.0:${port}`);
 });
